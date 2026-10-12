@@ -52,10 +52,21 @@ main{max-width:1100px;margin:26px auto;padding:0 16px 54px}
 .flash.flipped .flash-inner{transform:rotateY(180deg)}
 .face{position:absolute;inset:0;backface-visibility:hidden;border:1px solid var(--line);background:#fff;padding:16px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800}
 .back{transform:rotateY(180deg);background:#edf2f5;color:var(--blue)}
-.quiz-q{background:#fff;border:1px solid var(--line);padding:12px;margin:10px 0}
-.quiz-q label{display:block;margin:6px 0;cursor:pointer}
+.quiz-q{background:#fff;border:1px solid var(--line);padding:12px;margin:10px 0;border-radius:8px}
+.quiz-q label{display:block;margin:7px 0;cursor:pointer;padding:7px 9px;border-radius:6px;border:1px solid transparent}
+.quiz-q label.answer-correct{background:#e9f6ef;border-color:#8fc8a9;color:#17633e;font-weight:700}
+.quiz-q label.answer-wrong{background:#fdecef;border-color:#df9cab;color:#9c1f34;font-weight:700}
+.quiz-q.missed{border-color:#c84d61}
+.quiz-explain{margin-top:9px;padding:9px 10px;border-radius:6px;background:#f4f5f7;color:#394154;font-size:.92rem}
 .feedback{font-weight:800;margin-top:8px}
 .correct{color:#1f7a4d} .wrong{color:#b21f36}
+.quiz-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.category-summary{margin-top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.category-row{background:#fff;border:1px solid var(--line);padding:10px 12px;border-radius:8px}
+.category-row strong{display:block}
+.category-row.needs-work{border-color:#df9cab;background:#fff3f5}
+.category-row.good{border-color:#9bcdb2;background:#f2fbf6}
+@media(max-width:700px){.category-summary{grid-template-columns:1fr}}
 .small{font-size:.9rem;color:var(--muted)}
 .footer-note{font-size:.85rem;color:#6b6f78;margin-top:8px}
 @media(max-width:800px){body{background-attachment:scroll}.steps,.grid2,.flash-wrap{grid-template-columns:1fr}.docimg{height:auto;max-height:420px}header{padding-top:26px}}
@@ -158,7 +169,7 @@ main{max-width:1100px;margin:26px auto;padding:0 16px 54px}
 <div class="grammar-box"><h3>Expressing capacity</h3><span class="rule">can / can't + verb</span><div class="example">She can break codes.</div><span class="rule">be able to + verb</span><div class="example">He is able to go undercover.</div><span class="rule">be capable of + V-ing</span><div class="example">They are capable of solving puzzles.</div><span class="rule">be good at + V-ing</span><div class="example">She is good at deciphering codes.</div><span class="rule">master + noun / V-ing</span><div class="example">He has mastered skiing.</div></div>
 </div></section>
 <section class="section" id="vocab"><div class="kicker">Vocabulary</div><h2>Flashcards</h2><p class="small">Tap a card to turn it over. The vocabulary in bold in the summaries appears again here, including the video vocabulary: <b>presenter</b>, <b>villain</b>, <b>recruit / cadet</b>, <b>mastermind</b>, <b>evil</b>, <b>bring down / defeat</b> and <b>promote</b>.</p><div class="flash-wrap" id="flashcards"></div></section>
-<section class="section" id="quiz"><div class="kicker">Check yourself</div><h2>Quick quiz</h2><div id="quizbox"></div><button class="btn alt" onclick="checkQuiz()">Check answers</button><div class="feedback" id="score"></div></section>
+<section class="section" id="quiz"><div class="kicker">Check yourself</div><h2>Quick quiz</h2><p class="small">Each attempt gives you 24 questions. The questions and answer choices are shuffled each time.</p><div id="quizbox"></div><div class="quiz-actions"><button class="btn alt" onclick="checkQuiz()">Check answers</button><button class="btn" onclick="newQuiz()">Try again</button></div><div class="feedback" id="score"></div><div class="category-summary" id="categorySummary"></div></section>
 </main>
 <script>
 function go(id){document.getElementById(id).scrollIntoView({behavior:'smooth'})}
@@ -198,14 +209,120 @@ const cards=[
 ['the quickest','le / la plus rapide']
 ];
 const wrap=document.getElementById('flashcards');cards.forEach(([a,b])=>{const d=document.createElement('div');d.className='flash';d.innerHTML=`<div class="flash-inner"><div class="face">${a}</div><div class="face back">${b}</div></div>`;d.onclick=()=>d.classList.toggle('flipped');wrap.appendChild(d)});
-const qs=[
-{q:'Which sentence is correct?',a:['He is the strongest spy.','He is strongest spy.','He is the more strong spy.'],c:0},
-{q:'Complete: She is capable of … codes.',a:['break','breaking','to break'],c:1},
-{q:'What do the children do in Spy School?',a:['They solve puzzles and break codes.','They work in a hospital.','They write novels.'],c:0},
-{q:'Why are CHERUB teenagers useful as agents?',a:['Adults do not suspect them.','They have special weapons.','They never need training.'],c:0},
-{q:'Choose the correct form.',a:['the most talented','the talentest','the more talented'],c:0},
-{q:'Complete: She can … undercover.',a:['going','go','to go'],c:1}];
-const qb=document.getElementById('quizbox');qs.forEach((o,i)=>{const d=document.createElement('div');d.className='quiz-q';d.innerHTML=`<b>${i+1}. ${o.q}</b>`+o.a.map((x,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${x}</label>`).join('');qb.appendChild(d)});
-function checkQuiz(){let s=0;qs.forEach((o,i)=>{const r=document.querySelector(`input[name="q${i}"]:checked`);if(r&&Number(r.value)===o.c)s++});const el=document.getElementById('score');el.textContent=`Score: ${s} / ${qs.length}`;el.className='feedback '+(s===qs.length?'correct':'wrong')}
+const questionPool=[
+{cat:'Vocabulary',q:'What does “recruit” mean?',a:['a new member / trainee','a villain','a presenter'],c:0,ex:'A recruit is a new person who joins an organisation or training programme.'},
+{cat:'Vocabulary',q:'What does “bring down” mean?',a:['defeat / stop','train','promote'],c:0,ex:'In the sequence, the candidates must bring down Goldfist, meaning defeat or stop him.'},
+{cat:'Vocabulary',q:'What does “go undercover” mean?',a:['work secretly with a false identity','solve a puzzle','apply for a TV show'],c:0,ex:'To go undercover means to work secretly, usually with a false identity.'},
+{cat:'Vocabulary',q:'What does “mastermind” mean?',a:['a person who plans something complicated','a new recruit','a TV presenter'],c:0,ex:'Goldfist is described as an evil mastermind, the person behind a complex plan.'},
+{cat:'Vocabulary',q:'What does “decipher” mean?',a:['decode','defeat','train'],c:0,ex:'To decipher means to decode or understand a code.'},
+
+{cat:'Superlatives',q:'Which sentence is correct?',a:['He is the strongest spy.','He is strongest spy.','He is the more strong spy.'],c:0,ex:'With a short adjective, use the + adjective-est: the strongest.'},
+{cat:'Superlatives',q:'Choose the correct form of “talented”.',a:['the most talented','the talentest','the more talented'],c:0,ex:'Long adjectives generally form the superlative with the most.'},
+{cat:'Superlatives',q:'Choose the correct superlative of “good”.',a:['the best','the goodest','the most good'],c:0,ex:'Good has an irregular superlative: the best.'},
+{cat:'Superlatives',q:'Choose the correct superlative of “quick”.',a:['the quickest','the most quick','the quicker'],c:0,ex:'Quick is a short adjective, so the correct form is the quickest.'},
+{cat:'Superlatives',q:'Which sentence is correct?',a:['She is the bravest recruit.','She is the most bravest recruit.','She is bravest recruit.'],c:0,ex:'Use the + bravest, without most.'},
+
+{cat:'Capacity',q:'Complete: She is capable of … codes.',a:['breaking','break','to break'],c:0,ex:'Be capable of is followed by a verb in -ing.'},
+{cat:'Capacity',q:'Complete: She can … undercover.',a:['go','going','to go'],c:0,ex:'Can is followed by the base verb without to.'},
+{cat:'Capacity',q:'Which sentence is correct?',a:['He is able to solve puzzles.','He is able solving puzzles.','He is able solve puzzles.'],c:0,ex:'Be able to is followed by to + verb.'},
+{cat:'Capacity',q:'Which sentence is correct?',a:['She is good at deciphering codes.','She is good at decipher codes.','She is good to decipher codes.'],c:0,ex:'Be good at is followed by a verb in -ing.'},
+{cat:'Capacity',q:'Which sentence is correct?',a:['He has mastered skiing.','He has mastered to ski.','He has master skiing.'],c:0,ex:'Master can be followed by a noun or an -ing form.'},
+
+{cat:'Spy School',q:'What kind of document was studied first for Spy School?',a:['a poster','a novel extract','a newspaper article'],c:0,ex:'The sequence begins with a poster used as an anticipation document.'},
+{cat:'Spy School',q:'What is the purpose of the Spy School video?',a:['to promote the TV show and recruit new candidates','to sell a book','to explain CHERUB training'],c:0,ex:'The video promotes the TV show and encourages new candidates to join.'},
+{cat:'Spy School',q:'Who is Goldfist?',a:['the villain and an evil mastermind','one of the presenters','a CHERUB recruit'],c:0,ex:'Goldfist is the villain of Spy School and an evil mastermind.'},
+{cat:'Spy School',q:'What do the cadets do in Spy School?',a:['solve puzzles and break codes','write novels','work in a hospital'],c:0,ex:'The cadets develop spy skills by solving puzzles and breaking codes.'},
+{cat:'Spy School',q:'Which qualities are highlighted for new candidates?',a:['the strongest, the best and the quickest','the oldest, the richest and the tallest','the quietest, the slowest and the weakest'],c:0,ex:'The video highlights the superlatives the strongest, the best and the quickest.'},
+
+{cat:'The Recruit',q:'What kind of document is The Recruit image?',a:['a book cover','a TV poster','a web page'],c:0,ex:'The image studied is the cover of the novel The Recruit.'},
+{cat:'The Recruit',q:'Who wrote The Recruit?',a:['Robert Muchamore','Goldfist','Agent J'],c:0,ex:'The Recruit was written by Robert Muchamore.'},
+{cat:'The Recruit',q:'Why are CHERUB teenagers useful as agents?',a:['adults do not suspect them','they never need training','they have special powers'],c:0,ex:'Their age is useful because adults do not suspect teenagers of being agents.'},
+{cat:'The Recruit',q:'Who is James?',a:['the latest CHERUB recruit','the villain of Spy School','a TV presenter'],c:0,ex:'James is introduced as the latest CHERUB recruit.'},
+{cat:'The Recruit',q:'What must James survive before going into the field?',a:['one hundred days of basic training','one week of TV auditions','a London sightseeing tour'],c:0,ex:'Before field work, James must survive one hundred difficult days of basic training.'},
+
+{cat:'Methodology',q:'What should you mention when describing an image?',a:['foreground, background, colours and visible logos','only the title','only the date'],c:0,ex:'A complete description should organise what is visible and mention important visual elements.'},
+{cat:'Methodology',q:'What does “target audience” mean?',a:['the people the document is intended for','the author of the document','the date of publication'],c:0,ex:'The target audience is the group of people the document aims to reach.'},
+{cat:'Methodology',q:'What does “purpose” mean?',a:['the objective of the document','the colour of the document','the place where it was printed'],c:0,ex:'Purpose means what the document aims to do, for example inform, promote or entertain.'},
+{cat:'Methodology',q:'If a publication date is not given, what should you do?',a:['say that the date is not given','invent a likely date','leave the whole presentation blank'],c:0,ex:'Do not invent information. State that the date is not given.'},
+{cat:'Methodology',q:'What should you do first with an anticipation poster?',a:['describe it and make hypotheses','give the final answer immediately','ignore the visual details'],c:0,ex:'An anticipation document is used to observe, describe and make hypotheses before confirming them.'}
+];
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a;
+}
+
+let quizRun=[];
+function buildBalancedQuiz(){
+  const cats=[...new Set(questionPool.map(q=>q.cat))];
+  let picked=[];
+  cats.forEach(cat=>{picked.push(...shuffle(questionPool.filter(q=>q.cat===cat)).slice(0,4))});
+  return shuffle(picked).map(q=>{
+    const options=q.a.map((text,idx)=>({text,ok:idx===q.c}));
+    return {...q,options:shuffle(options)};
+  });
+}
+
+function renderQuiz(){
+  quizRun=buildBalancedQuiz();
+  const qb=document.getElementById('quizbox');
+  qb.innerHTML='';
+  document.getElementById('score').textContent='';
+  document.getElementById('score').className='feedback';
+  document.getElementById('categorySummary').innerHTML='';
+  quizRun.forEach((o,i)=>{
+    const d=document.createElement('div');d.className='quiz-q';d.dataset.index=i;
+    d.innerHTML=`<b>${i+1}. ${o.q}</b><div class="small">${o.cat}</div>`+
+      o.options.map((opt,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${opt.text}</label>`).join('')+
+      `<div class="quiz-explain" hidden></div>`;
+    qb.appendChild(d)
+  })
+}
+
+function checkQuiz(){
+  let totalScore=0;
+  const stats={};
+  quizRun.forEach((o,i)=>{
+    if(!stats[o.cat])stats[o.cat]={ok:0,total:0};
+    stats[o.cat].total++;
+    const box=document.querySelector(`.quiz-q[data-index="${i}"]`);
+    const labels=[...box.querySelectorAll('label')];
+    labels.forEach(l=>l.classList.remove('answer-correct','answer-wrong'));
+    const r=box.querySelector(`input[name="q${i}"]:checked`);
+    const correctIndex=o.options.findIndex(opt=>opt.ok);
+    labels[correctIndex].classList.add('answer-correct');
+    box.classList.remove('missed');
+    const explain=box.querySelector('.quiz-explain');
+    explain.hidden=false;
+    if(r && Number(r.value)===correctIndex){
+      totalScore++;stats[o.cat].ok++;
+      explain.textContent='Correct. '+o.ex;
+    }else{
+      box.classList.add('missed');
+      if(r)labels[Number(r.value)].classList.add('answer-wrong');
+      explain.textContent=(r?'Your answer is incorrect. ':'No answer selected. ')+'Correct answer: '+o.options[correctIndex].text+'. '+o.ex;
+    }
+  });
+  const el=document.getElementById('score');
+  el.textContent=`Score: ${totalScore} / ${quizRun.length}`;
+  el.className='feedback '+(totalScore===quizRun.length?'correct':'wrong');
+
+  const summary=document.getElementById('categorySummary');
+  summary.innerHTML='';
+  Object.entries(stats).sort(([a],[b])=>a.localeCompare(b)).forEach(([cat,s])=>{
+    const pct=Math.round((s.ok/s.total)*100);
+    const row=document.createElement('div');
+    row.className='category-row '+(pct>=75?'good':'needs-work');
+    row.innerHTML=`<strong>${cat}: ${s.ok} / ${s.total}</strong><span>${pct>=75?'Good — keep practising.':'Needs review — revise this section first.'}</span>`;
+    summary.appendChild(row);
+  });
+}
+
+function newQuiz(){
+  renderQuiz();
+  document.getElementById('quiz').scrollIntoView({behavior:'smooth'});
+}
+renderQuiz();
 </script>
 </body></html>
